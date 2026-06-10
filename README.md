@@ -1,6 +1,6 @@
 # Zenn Mute User Alert - Chrome拡張機能
 
-Zennでミュートしたユーザーの記事やページを開いた際に、警告モーダルを表示するChrome拡張機能です。
+**[Zenn]https://zenn.dev/** でミュートしたユーザーの記事やページを開いた際に、警告モーダルを表示するChrome拡張機能です。
 
 ## 機能
 

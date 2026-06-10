@@ -39,9 +39,7 @@ Zennでミュートしたユーザーの記事やページを開いた際に、�
 
 設計ドキュメントは GitHub Pages で公開しています。
 
-👉 **[設計書を見る](https://YOUR_USERNAME.github.io/Zenn_mute/)**
-
-> ※ リポジトリ作成後、上記URLの `YOUR_USERNAME` を自身のGitHubユーザー名に置き換えてください。
+**[設計書を見る](https://tkwork-dev.github.io/Zenn_mute/)**
 
 ## ファイル構成
 

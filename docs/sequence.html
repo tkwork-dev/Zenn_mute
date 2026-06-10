@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シーケンス図 - Zenn Mute User Alert</title>
+  <style>
+    :root {
+      --primary: #3ea8ff;
+      --bg: #fafbfc;
+      --card-bg: #ffffff;
+      --text: #1a1a1a;
+      --text-sub: #4a4a4a;
+      --border: #e1e4e8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 32px;
+    }
+    h2 {
+      font-size: 20px;
+      color: var(--text);
+      margin: 32px 0 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--primary);
+    }
+    p {
+      color: var(--text-sub);
+      margin-bottom: 16px;
+    }
+    .diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 16px 0 24px;
+      overflow-x: auto;
+    }
+    nav {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-bottom: 32px;
+    }
+    nav a {
+      color: var(--primary);
+      text-decoration: none;
+      margin-right: 16px;
+      font-size: 14px;
+    }
+    nav a:hover { text-decoration: underline; }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="./index.html">← ドキュメント一覧に戻る</a>
+    <h1>シーケンス図</h1>
+
+    <nav>
+      <a href="./architecture.html">アーキテクチャ</a>
+      <a href="./data-model.html">データモデル</a>
+      <a href="./state.html">状態遷移図</a>
+    </nav>
+
+    <h2>1. ミュートリスト同期フロー</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+sequenceDiagram
+    actor User as ユーザー
+    participant Popup as popup.js
+    participant Tab as 新しいタブ
+    participant CS as content.js
+    participant DOM as Zenn DOM
+    participant Storage as chrome.storage.local
+
+    User->>Popup: 「同期」ボタンをクリック
+    Popup->>Tab: chrome.tabs.create(/settings/mutes)
+    Tab->>CS: content script注入(document_idle)
+    CS->>CS: パス判定(/settings/mutes)
+    CS->>CS: 1秒待機
+    loop 最大20回リトライ(500ms間隔)
+        CS->>DOM: querySelectorAll('a[href^="/"]')
+        DOM-->>CS: リンク要素一覧
+        CS->>CS: /username 形式をフィルタ
+        CS->>CS: systemPathsを除外
+    end
+    CS->>Storage: set({ mutedUsers: [...] })
+    Storage-->>CS: 保存完了
+    CS->>DOM: 同期完了通知を表示
+    Note over DOM: 「✓ ミュートユーザー N人 を同期しました」
+      </pre>
+    </div>
+
+    <h2>2. ミュートユーザー検出・警告フロー</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+sequenceDiagram
+    actor User as ユーザー
+    participant Browser as ブラウザ
+    participant CS as content.js
+    participant Storage as chrome.storage.local
+    participant Modal as 警告モーダル
+
+    User->>Browser: Zennの記事ページを開く
+    Browser->>CS: content script注入
+    CS->>CS: URLからユーザー名抽出
+    CS->>Storage: get(['mutedUsers'])
+    Storage-->>CS: ミュートリスト
+    CS->>CS: ユーザー名がリストに含まれるか判定
+
+    alt ミュート済み
+        CS->>Modal: モーダル生成・表示
+        Modal->>User: 「ミュート中のユーザーです」
+
+        alt 「戻る」クリック
+            User->>Modal: 戻るボタン
+            Modal->>Browser: history.back()
+        else 「トップページへ」クリック
+            User->>Modal: トップページへボタン
+            Modal->>Browser: location = zenn.dev
+        else 「このまま閲覧する」クリック
+            User->>Modal: 閲覧ボタン
+            Modal->>Modal: モーダル削除
+        else Escキー
+            User->>Modal: Escape
+            Modal->>Modal: モーダル削除
+        end
+    else ミュートしていない
+        CS->>CS: 何もしない
+    end
+      </pre>
+    </div>
+
+    <h2>3. SPAページ遷移検知フロー</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+sequenceDiagram
+    participant DOM as Zenn DOM
+    participant Observer as MutationObserver
+    participant CS as content.js
+
+    CS->>Observer: observe(body, {childList, subtree})
+    Note over Observer: URL監視開始
+
+    loop DOM変更のたびに
+        DOM->>Observer: mutation callback
+        Observer->>Observer: location.href !== lastUrl ?
+        alt URLが変わった
+            Observer->>CS: 既存モーダル削除
+            Observer->>CS: 500ms後にmain()実行
+            CS->>CS: 新URLでミュートチェック
+        else URLが同じ
+            Observer->>Observer: スキップ
+        end
+    end
+      </pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>

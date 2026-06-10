@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>状態遷移図 - Zenn Mute User Alert</title>
+  <style>
+    :root {
+      --primary: #3ea8ff;
+      --bg: #fafbfc;
+      --card-bg: #ffffff;
+      --text: #1a1a1a;
+      --text-sub: #4a4a4a;
+      --border: #e1e4e8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 32px;
+    }
+    h2 {
+      font-size: 20px;
+      color: var(--text);
+      margin: 32px 0 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--primary);
+    }
+    p {
+      color: var(--text-sub);
+      margin-bottom: 16px;
+    }
+    .diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 16px 0 24px;
+      overflow-x: auto;
+    }
+    nav {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-bottom: 32px;
+    }
+    nav a {
+      color: var(--primary);
+      text-decoration: none;
+      margin-right: 16px;
+      font-size: 14px;
+    }
+    nav a:hover { text-decoration: underline; }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="./index.html">← ドキュメント一覧に戻る</a>
+    <h1>状態遷移図</h1>
+
+    <nav>
+      <a href="./architecture.html">アーキテクチャ</a>
+      <a href="./data-model.html">データモデル</a>
+      <a href="./sequence.html">シーケンス図</a>
+    </nav>
+
+    <h2>1. 拡張機能の全体状態</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> 未同期: 初回インストール
+    未同期 --> 同期済み: ミュート設定ページを開く\nまたは手動追加
+
+    state 同期済み {
+        [*] --> 通常閲覧
+        通常閲覧 --> モーダル表示: ミュートユーザーのページを開く
+        モーダル表示 --> 通常閲覧: 「このまま閲覧する」\nまたはEsc
+        モーダル表示 --> ページ離脱: 「戻る」\n「トップページへ」
+        ページ離脱 --> 通常閲覧: 別のページを開く
+    }
+
+    同期済み --> 同期済み: 再同期\nリスト更新
+      </pre>
+    </div>
+
+    <h2>2. モーダルの状態遷移</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> 非表示
+
+    非表示 --> 表示中: ミュートユーザー検出
+
+    state 表示中 {
+        [*] --> フォーカス取得
+        フォーカス取得 --> ユーザー操作待ち
+    }
+
+    表示中 --> 非表示: 「このまま閲覧する」クリック
+    表示中 --> 非表示: Escキー
+    表示中 --> リダイレクト: 「戻る」クリック
+    表示中 --> リダイレクト: 「トップページへ」クリック
+    表示中 --> 非表示: SPA遷移検知(別ページ)
+
+    リダイレクト --> [*]
+      </pre>
+    </div>
+
+    <h2>3. スクレイピングのリトライ状態</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> 待機中: ページ読み込み完了
+
+    待機中 --> DOM探索中: 1秒後
+
+    DOM探索中 --> 成功: ユーザーリンク発見
+    DOM探索中 --> リトライ待ち: リンク未発見 & 試行回数 < 20
+    DOM探索中 --> 失敗: リンク未発見 & 試行回数 >= 20
+
+    リトライ待ち --> DOM探索中: 500ms後
+
+    成功 --> 保存完了: storage.localに保存
+    保存完了 --> [*]: 通知表示
+
+    失敗 --> [*]: 失敗通知表示
+      </pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>

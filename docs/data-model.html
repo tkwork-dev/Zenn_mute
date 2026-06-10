@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>データモデル設計書 - Zenn Mute User Alert</title>
+  <style>
+    :root {
+      --primary: #3ea8ff;
+      --bg: #fafbfc;
+      --card-bg: #ffffff;
+      --text: #1a1a1a;
+      --text-sub: #4a4a4a;
+      --border: #e1e4e8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 32px;
+    }
+    h2 {
+      font-size: 20px;
+      color: var(--text);
+      margin: 32px 0 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--primary);
+    }
+    p {
+      color: var(--text-sub);
+      margin-bottom: 16px;
+    }
+    .diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 16px 0 24px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    th {
+      background: #f6f8fa;
+      font-weight: 600;
+      color: var(--text);
+    }
+    td { color: var(--text-sub); }
+    code {
+      background: #f0f4f8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+    nav {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-bottom: 32px;
+    }
+    nav a {
+      color: var(--primary);
+      text-decoration: none;
+      margin-right: 16px;
+      font-size: 14px;
+    }
+    nav a:hover { text-decoration: underline; }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="./index.html">← ドキュメント一覧に戻る</a>
+    <h1>データモデル設計書</h1>
+
+    <nav>
+      <a href="./architecture.html">アーキテクチャ</a>
+      <a href="./sequence.html">シーケンス図</a>
+      <a href="./state.html">状態遷移図</a>
+    </nav>
+
+    <h2>ストレージ構造</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+erDiagram
+    CHROME_STORAGE_LOCAL {
+        string[] mutedUsers "ミュートユーザー名リスト"
+    }
+      </pre>
+    </div>
+
+    <h2>データ定義</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>キー</th>
+          <th>型</th>
+          <th>説明</th>
+          <th>例</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>mutedUsers</code></td>
+          <td><code>string[]</code></td>
+          <td>小文字に正規化されたユーザー名の配列</td>
+          <td><code>["catatsuy", "example_user"]</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>データライフサイクル</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart TD
+    subgraph 書き込み
+        A[ミュート設定ページの同期] -->|上書き| S[(storage.local)]
+        B[ポップアップから手動追加] -->|追加| S
+    end
+
+    subgraph 読み取り
+        S -->|取得| C[content.js: ミュートチェック]
+        S -->|取得| D[popup.js: リスト表示]
+    end
+
+    subgraph 削除
+        E[ポップアップから手動削除] -->|フィルタ後保存| S
+    end
+      </pre>
+    </div>
+
+    <h2>バリデーションルール</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart LR
+    入力 --> V1{空文字?}
+    V1 -->|Yes| 拒否
+    V1 -->|No| V2{正規表現チェック<br>/^[a-zA-Z0-9_-]+$/}
+    V2 -->|不一致| 拒否
+    V2 -->|一致| V3[小文字に変換]
+    V3 --> V4{既に存在?}
+    V4 -->|Yes| 重複通知
+    V4 -->|No| 保存
+      </pre>
+    </div>
+
+    <h2>ストレージ容量</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>値</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>使用API</td>
+          <td><code>chrome.storage.local</code></td>
+        </tr>
+        <tr>
+          <td>最大容量</td>
+          <td>10MB</td>
+        </tr>
+        <tr>
+          <td>1ユーザー名あたりの平均サイズ</td>
+          <td>約20バイト</td>
+        </tr>
+        <tr>
+          <td>理論上の最大登録数</td>
+          <td>約50万件</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>

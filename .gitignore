@@ -1,0 +1,11 @@
+# エディタ設定
+.vscode/
+.idea/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Kiro設定
+.kiro/

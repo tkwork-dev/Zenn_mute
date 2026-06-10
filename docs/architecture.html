@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アーキテクチャ設計書 - Zenn Mute User Alert</title>
+  <style>
+    :root {
+      --primary: #3ea8ff;
+      --bg: #fafbfc;
+      --card-bg: #ffffff;
+      --text: #1a1a1a;
+      --text-sub: #4a4a4a;
+      --border: #e1e4e8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 32px;
+    }
+    h2 {
+      font-size: 20px;
+      color: var(--text);
+      margin: 32px 0 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--primary);
+    }
+    p {
+      color: var(--text-sub);
+      margin-bottom: 16px;
+    }
+    .diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 16px 0 24px;
+      overflow-x: auto;
+    }
+    nav {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-bottom: 32px;
+    }
+    nav a {
+      color: var(--primary);
+      text-decoration: none;
+      margin-right: 16px;
+      font-size: 14px;
+    }
+    nav a:hover { text-decoration: underline; }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="./index.html">← ドキュメント一覧に戻る</a>
+    <h1>アーキテクチャ設計書</h1>
+
+    <nav>
+      <a href="./data-model.html">データモデル</a>
+      <a href="./sequence.html">シーケンス図</a>
+      <a href="./state.html">状態遷移図</a>
+    </nav>
+
+    <h2>システム概要</h2>
+    <p>Zenn Mute User Alert は、Zennでミュートしたユーザーのページを開いた際に警告モーダルを表示するChrome拡張機能です。</p>
+
+    <h2>コンポーネント構成</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+graph TB
+    subgraph Chrome拡張機能
+        M[manifest.json<br>拡張機能定義]
+        CS[content.js<br>コンテンツスクリプト]
+        CSS[modal.css<br>モーダルスタイル]
+        PH[popup.html<br>ポップアップUI]
+        PJ[popup.js<br>ポップアップロジック]
+        ST[(chrome.storage.local<br>ミュートリスト)]
+    end
+
+    subgraph Zennサイト
+        MP[ミュート設定ページ<br>/settings/mutes]
+        AP[記事・ユーザーページ<br>/username/...]
+    end
+
+    M --> CS
+    M --> CSS
+    M --> PH
+    PH --> PJ
+    CS -->|スクレイピング| MP
+    CS -->|ユーザー名抽出| AP
+    CS -->|読み書き| ST
+    PJ -->|読み書き| ST
+      </pre>
+    </div>
+
+    <h2>データフロー</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart LR
+    subgraph 同期フロー
+        A[ユーザー操作] -->|同期ボタン押下| B[ミュート設定ページを開く]
+        B --> C[DOM内のユーザーリンクを取得]
+        C --> D[systemPathsを除外]
+        D --> E[storage.localに保存]
+    end
+
+    subgraph 判定フロー
+        F[Zennページ読み込み] --> G[URLからユーザー名抽出]
+        G --> H[storage.localから<br>ミュートリスト取得]
+        H --> I{ミュート済み?}
+        I -->|Yes| J[警告モーダル表示]
+        I -->|No| K[何もしない]
+    end
+      </pre>
+    </div>
+
+    <h2>ファイル依存関係</h2>
+    <div class="diagram-card">
+      <pre class="mermaid">
+graph LR
+    manifest.json -->|登録| content.js
+    manifest.json -->|登録| modal.css
+    manifest.json -->|登録| popup.html
+    popup.html -->|読み込み| popup.js
+    content.js -->|利用| modal.css
+      </pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>

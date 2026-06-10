@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>結合試験仕様書 - Zenn Mute User Alert</title>
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    .test-table { font-size: 13px; }
+    .test-table th { white-space: nowrap; }
+    .test-table td code { font-size: 12px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-normal { background: #e6f7ed; color: #1a7f4b; }
+    .badge-abnormal { background: #fef3e2; color: #b45309; }
+    .badge-boundary { background: #eef0ff; color: #4338ca; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="./index.html">← ドキュメント一覧に戻る</a>
+    <h1>結合試験仕様書</h1>
+
+    <nav>
+      <a href="./test-unit.html">単体試験仕様書</a>
+      <a href="./architecture.html">アーキテクチャ</a>
+      <a href="./sequence.html">シーケンス図</a>
+    </nav>
+
+    <p>機能間の連携・エンドツーエンドの動作を確認する試験項目を定義する。</p>
+
+    <!-- シナリオ1: 同期フロー -->
+    <h2>1. ミュートリスト同期フロー</h2>
+
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart LR
+    A[ポップアップ] -->|同期ボタン| B[新しいタブ]
+    B -->|content.js注入| C[DOM解析]
+    C -->|ユーザー抽出| D[storage.local保存]
+    D -->|通知| E[同期完了]
+      </pre>
+    </div>
+
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>シナリオ</th>
+          <th>前提条件</th>
+          <th>手順</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IT-001</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>同期ボタンでミュートリスト取得</td>
+          <td>Zennにログイン済み、ミュート設定にユーザーが存在</td>
+          <td>1. ポップアップを開く<br>2. 「同期」ボタンを押下</td>
+          <td>ミュート設定ページが開き、ユーザーリストがstorage.localに保存される。同期完了通知が表示される</td>
+        </tr>
+        <tr>
+          <td>IT-002</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>同期結果がポップアップに反映</td>
+          <td>IT-001完了後</td>
+          <td>1. ポップアップを再度開く</td>
+          <td>同期したユーザーがリストに表示される。件数表示が正しい</td>
+        </tr>
+        <tr>
+          <td>IT-003</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>未ログインで同期</td>
+          <td>Zennにログインしていない</td>
+          <td>1. ポップアップから「同期」ボタン押下</td>
+          <td>ミュート設定ページが開くが、ユーザーが見つからず失敗通知が表示される</td>
+        </tr>
+        <tr>
+          <td>IT-004</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>再同期で最新リストに上書き</td>
+          <td>既にリストが保存済み。Zenn側でミュートを変更</td>
+          <td>1. 再度「同期」ボタン押下</td>
+          <td>最新のミュートリストで上書き保存される</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- シナリオ2: 警告モーダル表示 -->
+    <h2>2. ミュートユーザー警告フロー</h2>
+
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart LR
+    A[ページ読み込み] -->|URL解析| B[ユーザー名取得]
+    B -->|storage読み取り| C{ミュート済み?}
+    C -->|Yes| D[モーダル表示]
+    C -->|No| E[何もしない]
+      </pre>
+    </div>
+
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>シナリオ</th>
+          <th>前提条件</th>
+          <th>手順</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IT-010</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ミュートユーザーの記事を開く</td>
+          <td>storageに <code>"catatsuy"</code> を登録済み</td>
+          <td>1. <code>zenn.dev/catatsuy/articles/xxx</code> にアクセス</td>
+          <td>警告モーダルが表示される。ユーザー名 <code>@catatsuy</code> が表示される</td>
+        </tr>
+        <tr>
+          <td>IT-011</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ミュートしていないユーザーの記事を開く</td>
+          <td>storageに <code>"catatsuy"</code> のみ登録</td>
+          <td>1. <code>zenn.dev/other_user/articles/xxx</code> にアクセス</td>
+          <td>モーダルが表示されず通常閲覧できる</td>
+        </tr>
+        <tr>
+          <td>IT-012</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ユーザートップページでも検出</td>
+          <td>storageに <code>"catatsuy"</code> を登録済み</td>
+          <td>1. <code>zenn.dev/catatsuy</code> にアクセス</td>
+          <td>警告モーダルが表示される</td>
+        </tr>
+        <tr>
+          <td>IT-013</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>大文字小文字を区別しない</td>
+          <td>storageに <code>"catatsuy"</code> を登録済み</td>
+          <td>1. <code>zenn.dev/CatAtSuy/articles/xxx</code> にアクセス</td>
+          <td>警告モーダルが表示される（小文字で比較）</td>
+        </tr>
+        <tr>
+          <td>IT-014</td>
+          <td><span class="badge badge-boundary">境界</span></td>
+          <td>ミュートリストが空</td>
+          <td>storageが空</td>
+          <td>1. 任意のZennユーザーページにアクセス</td>
+          <td>モーダルは表示されない</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- シナリオ3: モーダル操作 -->
+    <h2>3. モーダル操作フロー</h2>
+
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>シナリオ</th>
+          <th>前提条件</th>
+          <th>手順</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IT-020</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>「戻る」ボタンで前のページへ</td>
+          <td>モーダル表示中、履歴あり</td>
+          <td>1. 「戻る」ボタンをクリック</td>
+          <td><code>history.back()</code> が実行され、前のページに戻る</td>
+        </tr>
+        <tr>
+          <td>IT-021</td>
+          <td><span class="badge badge-boundary">境界</span></td>
+          <td>「戻る」ボタン（履歴なし）</td>
+          <td>モーダル表示中、直接URLアクセスで履歴が1件のみ</td>
+          <td>1. 「戻る」ボタンをクリック</td>
+          <td>Zennトップページへリダイレクトされる</td>
+        </tr>
+        <tr>
+          <td>IT-022</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>「トップページへ」ボタン</td>
+          <td>モーダル表示中</td>
+          <td>1. 「トップページへ」ボタンをクリック</td>
+          <td><code>zenn.dev</code> へ遷移する</td>
+        </tr>
+        <tr>
+          <td>IT-023</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>「このまま閲覧する」ボタン</td>
+          <td>モーダル表示中</td>
+          <td>1. 「このまま閲覧する」をクリック</td>
+          <td>モーダルが閉じ、記事が通常通り閲覧できる</td>
+        </tr>
+        <tr>
+          <td>IT-024</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>Escキーでモーダルを閉じる</td>
+          <td>モーダル表示中</td>
+          <td>1. Escキーを押下</td>
+          <td>モーダルが閉じ、記事が通常通り閲覧できる</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- シナリオ4: SPA遷移 -->
+    <h2>4. SPA遷移対応フロー</h2>
+
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart LR
+    A[ページA閲覧中] -->|Zenn内リンク遷移| B[URL変更検知]
+    B --> C[既存モーダル削除]
+    C --> D[500ms待機]
+    D --> E[新URLでミュートチェック]
+      </pre>
+    </div>
+
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>シナリオ</th>
+          <th>前提条件</th>
+          <th>手順</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IT-030</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>SPA遷移でミュートユーザーページへ</td>
+          <td>Zennの通常ページ閲覧中</td>
+          <td>1. Zenn内リンクでミュートユーザーの記事へ遷移</td>
+          <td>遷移後に警告モーダルが表示される</td>
+        </tr>
+        <tr>
+          <td>IT-031</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>SPA遷移でミュートユーザーページから離脱</td>
+          <td>モーダルを「閲覧する」で閉じた状態</td>
+          <td>1. Zenn内リンクで別のユーザーページへ遷移</td>
+          <td>モーダルは表示されない</td>
+        </tr>
+        <tr>
+          <td>IT-032</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>モーダル表示中にSPA遷移</td>
+          <td>モーダル表示中</td>
+          <td>1. ブラウザの戻る/進むで別ページへ遷移</td>
+          <td>既存モーダルが削除され、新URLで再判定される</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- シナリオ5: 手動追加→検出 -->
+    <h2>5. 手動追加 → 検出の連携</h2>
+
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>シナリオ</th>
+          <th>前提条件</th>
+          <th>手順</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IT-040</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>手動追加したユーザーの記事で警告表示</td>
+          <td>ミュートリストが空</td>
+          <td>1. ポップアップで <code>"testuser"</code> を手動追加<br>2. <code>zenn.dev/testuser/articles/xxx</code> を開く</td>
+          <td>警告モーダルが表示される</td>
+        </tr>
+        <tr>
+          <td>IT-041</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>手動削除後は警告が出ない</td>
+          <td><code>"testuser"</code> が登録済み</td>
+          <td>1. ポップアップで <code>"testuser"</code> を削除<br>2. <code>zenn.dev/testuser/articles/xxx</code> を開く</td>
+          <td>モーダルは表示されない</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- シナリオ6: ストレージ永続性 -->
+    <h2>6. データ永続性</h2>
+
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>シナリオ</th>
+          <th>前提条件</th>
+          <th>手順</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IT-050</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ブラウザ再起動後もリストが保持される</td>
+          <td>ミュートリストに複数ユーザー登録済み</td>
+          <td>1. Chromeを閉じて再度開く<br>2. ポップアップを開く</td>
+          <td>登録したユーザーが引き続き表示される</td>
+        </tr>
+        <tr>
+          <td>IT-051</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>再起動後もミュート検出が動作</td>
+          <td>IT-050完了後</td>
+          <td>1. ミュートユーザーの記事を開く</td>
+          <td>警告モーダルが表示される</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>

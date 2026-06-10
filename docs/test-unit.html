@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>単体試験仕様書 - Zenn Mute User Alert</title>
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    .test-table { font-size: 13px; }
+    .test-table th { white-space: nowrap; }
+    .test-table td code { font-size: 12px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-normal { background: #e6f7ed; color: #1a7f4b; }
+    .badge-abnormal { background: #fef3e2; color: #b45309; }
+    .badge-boundary { background: #eef0ff; color: #4338ca; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="./index.html">← ドキュメント一覧に戻る</a>
+    <h1>単体試験仕様書</h1>
+
+    <nav>
+      <a href="./test-integration.html">結合試験仕様書</a>
+      <a href="./architecture.html">アーキテクチャ</a>
+      <a href="./sequence.html">シーケンス図</a>
+    </nav>
+
+    <p>各関数・モジュール単位での試験項目を定義する。</p>
+
+    <!-- content.js -->
+    <h2>1. content.js - getAuthorUsername()</h2>
+    <p>URLパスからユーザー名を抽出する関数のテスト。</p>
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>テスト内容</th>
+          <th>入力（URLパス）</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UT-001</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>記事ページのユーザー名を取得</td>
+          <td><code>/catatsuy/articles/abc123</code></td>
+          <td><code>"catatsuy"</code></td>
+        </tr>
+        <tr>
+          <td>UT-002</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ユーザートップページ</td>
+          <td><code>/example_user</code></td>
+          <td><code>"example_user"</code></td>
+        </tr>
+        <tr>
+          <td>UT-003</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>スクラップページ</td>
+          <td><code>/testuser/scraps/xyz</code></td>
+          <td><code>"testuser"</code></td>
+        </tr>
+        <tr>
+          <td>UT-004</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>システムパス（settings）</td>
+          <td><code>/settings/mutes</code></td>
+          <td><code>null</code></td>
+        </tr>
+        <tr>
+          <td>UT-005</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>システムパス（articles）</td>
+          <td><code>/articles</code></td>
+          <td><code>null</code></td>
+        </tr>
+        <tr>
+          <td>UT-006</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>システムパス（search）</td>
+          <td><code>/search</code></td>
+          <td><code>null</code></td>
+        </tr>
+        <tr>
+          <td>UT-007</td>
+          <td><span class="badge badge-boundary">境界</span></td>
+          <td>ルートパス</td>
+          <td><code>/</code></td>
+          <td><code>null</code></td>
+        </tr>
+        <tr>
+          <td>UT-008</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ハイフン付きユーザー名</td>
+          <td><code>/my-user/articles/1</code></td>
+          <td><code>"my-user"</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. content.js - escapeHtml()</h2>
+    <p>HTML特殊文字をエスケープする関数のテスト。</p>
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>テスト内容</th>
+          <th>入力</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UT-010</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>通常の文字列</td>
+          <td><code>"hello"</code></td>
+          <td><code>"hello"</code></td>
+        </tr>
+        <tr>
+          <td>UT-011</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>scriptタグを含む</td>
+          <td><code>"&lt;script&gt;alert(1)&lt;/script&gt;"</code></td>
+          <td>HTMLエンティティにエスケープ</td>
+        </tr>
+        <tr>
+          <td>UT-012</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>HTMLタグ</td>
+          <td><code>"&lt;b&gt;bold&lt;/b&gt;"</code></td>
+          <td><code>"&amp;lt;b&amp;gt;bold&amp;lt;/b&amp;gt;"</code></td>
+        </tr>
+        <tr>
+          <td>UT-013</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>アンパサンド</td>
+          <td><code>"A &amp; B"</code></td>
+          <td><code>"A &amp;amp; B"</code></td>
+        </tr>
+        <tr>
+          <td>UT-014</td>
+          <td><span class="badge badge-boundary">境界</span></td>
+          <td>空文字</td>
+          <td><code>""</code></td>
+          <td><code>""</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. content.js - scrapeMutedUsers()</h2>
+    <p>ミュート設定ページからユーザーリストをスクレイピングする関数のテスト。</p>
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>テスト内容</th>
+          <th>前提条件</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UT-020</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ユーザーリンクが存在する</td>
+          <td>DOM内に <code>/username</code> 形式リンク3件</td>
+          <td>3件がstorage.localに保存される</td>
+        </tr>
+        <tr>
+          <td>UT-021</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>システムパスを除外する</td>
+          <td>DOM内に <code>/settings</code>, <code>/user1</code></td>
+          <td><code>["user1"]</code> のみ保存</td>
+        </tr>
+        <tr>
+          <td>UT-022</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>重複を除去する</td>
+          <td>DOM内に同一ユーザーリンク2件</td>
+          <td>1件のみ保存</td>
+        </tr>
+        <tr>
+          <td>UT-023</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>大文字を小文字に変換</td>
+          <td>DOM内に <code>/TestUser</code></td>
+          <td><code>["testuser"]</code> として保存</td>
+        </tr>
+        <tr>
+          <td>UT-024</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>ユーザーリンクが見つからない</td>
+          <td>DOM内にユーザーリンクなし</td>
+          <td>20回リトライ後、失敗通知を表示</td>
+        </tr>
+        <tr>
+          <td>UT-025</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>リトライで取得成功</td>
+          <td>3回目のリトライでリンクが出現</td>
+          <td>保存成功、同期通知表示</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. content.js - showMuteWarningModal()</h2>
+    <p>警告モーダルの表示に関するテスト。</p>
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>テスト内容</th>
+          <th>前提条件</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UT-030</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>モーダルが生成される</td>
+          <td>モーダル未表示</td>
+          <td>DOM内にoverlay要素が追加される</td>
+        </tr>
+        <tr>
+          <td>UT-031</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ユーザー名が表示される</td>
+          <td><code>username = "catatsuy"</code></td>
+          <td>モーダル内に <code>@catatsuy</code> が表示</td>
+        </tr>
+        <tr>
+          <td>UT-032</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>二重表示の防止</td>
+          <td>モーダルが既に存在</td>
+          <td>新しいモーダルが生成されない</td>
+        </tr>
+        <tr>
+          <td>UT-033</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>WAI-ARIA属性が設定される</td>
+          <td>モーダル表示</td>
+          <td><code>role="dialog"</code>, <code>aria-modal="true"</code> あり</td>
+        </tr>
+        <tr>
+          <td>UT-034</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>フォーカスが「戻る」ボタンに移動</td>
+          <td>モーダル表示直後</td>
+          <td><code>document.activeElement</code> が戻るボタン</td>
+        </tr>
+        <tr>
+          <td>UT-035</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>XSS対策</td>
+          <td><code>username = "&lt;img onerror=alert(1)&gt;"</code></td>
+          <td>HTMLエスケープされて安全に表示</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. popup.js - addUser()</h2>
+    <p>ポップアップからのユーザー手動追加のテスト。</p>
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>テスト内容</th>
+          <th>入力</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UT-040</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>正常なユーザー名の追加</td>
+          <td><code>"newuser"</code></td>
+          <td>storageに追加、リスト再描画</td>
+        </tr>
+        <tr>
+          <td>UT-041</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>大文字を小文字に変換して追加</td>
+          <td><code>"NewUser"</code></td>
+          <td><code>"newuser"</code> として保存</td>
+        </tr>
+        <tr>
+          <td>UT-042</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>先頭の@を除去</td>
+          <td><code>"@testuser"</code></td>
+          <td><code>"testuser"</code> として保存</td>
+        </tr>
+        <tr>
+          <td>UT-043</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>空文字の入力</td>
+          <td><code>""</code></td>
+          <td>何も追加されない</td>
+        </tr>
+        <tr>
+          <td>UT-044</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>スペースのみの入力</td>
+          <td><code>"   "</code></td>
+          <td>何も追加されない</td>
+        </tr>
+        <tr>
+          <td>UT-045</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>無効な文字を含む</td>
+          <td><code>"user@name!"</code></td>
+          <td>「無効なユーザー名です」表示</td>
+        </tr>
+        <tr>
+          <td>UT-046</td>
+          <td><span class="badge badge-abnormal">異常</span></td>
+          <td>重複するユーザー名</td>
+          <td>既に <code>"testuser"</code> 登録済み</td>
+          <td>「既に登録されています」表示</td>
+        </tr>
+        <tr>
+          <td>UT-047</td>
+          <td><span class="badge badge-boundary">境界</span></td>
+          <td>ハイフン・アンダースコア付き</td>
+          <td><code>"my_user-name"</code></td>
+          <td>正常に保存</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. popup.js - removeUser()</h2>
+    <p>ポップアップからのユーザー削除のテスト。</p>
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>テスト内容</th>
+          <th>前提条件</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UT-050</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>ユーザーを削除</td>
+          <td><code>["user1", "user2"]</code> 登録済み</td>
+          <td><code>"user1"</code> 削除後 <code>["user2"]</code></td>
+        </tr>
+        <tr>
+          <td>UT-051</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>最後の1件を削除</td>
+          <td><code>["user1"]</code> のみ登録</td>
+          <td>空配列、空メッセージ表示</td>
+        </tr>
+        <tr>
+          <td>UT-052</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>削除完了メッセージ</td>
+          <td>削除実行</td>
+          <td>「@user1 を削除しました」表示</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>7. content.js - SPA遷移検知（MutationObserver）</h2>
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>分類</th>
+          <th>テスト内容</th>
+          <th>前提条件</th>
+          <th>期待結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UT-060</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>URL変更時にmain()が再実行される</td>
+          <td>SPA遷移によりURLが変更</td>
+          <td>500ms後にmain()が呼ばれる</td>
+        </tr>
+        <tr>
+          <td>UT-061</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>既存モーダルが削除される</td>
+          <td>モーダル表示中にSPA遷移</td>
+          <td>モーダルがDOMから除去</td>
+        </tr>
+        <tr>
+          <td>UT-062</td>
+          <td><span class="badge badge-normal">正常</span></td>
+          <td>URL未変更時はスキップ</td>
+          <td>DOM変更あるがURL同一</td>
+          <td>main()は呼ばれない</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>
